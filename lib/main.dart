@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:ffi';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 void main() {
   runApp(MyApp());
@@ -148,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               return ListView.separated(
                                 itemCount: snapshot.data.length,
                                 itemBuilder: (context, index) {
-                                  return ListTile(
+                                  /*return ListTile(
                                     title: Text(
                                         snapshot.data[index]['data']['title']),
                                     trailing: Image.network(
@@ -160,7 +163,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                       },
                                     ),
                                   );
-
+                                 
+*/                                int votes = snapshot.data[index]['data']['ups'];
+                                  String title = snapshot.data[index]['data']['title'];
+                                  String author = snapshot.data[index]['data']['author'];
+                                  int num_comments = snapshot.data[index]['data']['num_comments'];
+                                  String img = snapshot.data[index]['data']['thumbnail'];
+                                  return customListTile(votes,author,title,num_comments,img);
 
                                 },
                               separatorBuilder: (context,index){
@@ -262,4 +271,91 @@ class Navbar extends StatelessWidget{
         ],
       );
     }
+  }
+
+  class customListTile extends StatelessWidget{
+  String author;
+  String title;
+  String img;
+  int votes;
+  int numOfComments;
+  customListTile(this.votes,this.author, this.title,this.numOfComments,this.img);
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(left: 10),
+      child: Row(
+        children: [
+          Column(
+            children: [
+              Icon(
+                Icons.arrow_drop_up
+              ),
+              Text(this.votes.toString()),
+              Icon(Icons.arrow_drop_down)
+            ],
+          ),
+          
+          
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 10,right: 10),
+                child: Column(
+                  children: [
+
+                    Align(
+                      alignment: Alignment.centerLeft,
+                     child: Container(
+                       child: Text(
+                         this.title,
+                         overflow: TextOverflow.ellipsis,
+                         textAlign: TextAlign.left,
+                         maxLines: 2,
+
+
+                       ),
+                     ),
+                   ),
+                   SizedBox(height: 10,),
+                   Align(
+                   alignment: Alignment.centerLeft,
+                     child: Container(
+                        child:Text(
+                        this.numOfComments.toString() + "  comments  " + this.author,
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey
+                        ),
+                        )
+                      )
+                   )
+                  ],
+                ),
+              ),
+            ),
+          
+          Container(
+            width: 80,
+            height: 80,
+            child: Image.network(
+                this.img,
+                errorBuilder: (BuildContext context,
+                Object exception,
+                StackTrace stackTrace) {
+                return Container(
+                  child:Image.network(
+                    'https://e7.pngegg.com/pngimages/472/327/png-clipart-reddit-logo-computer-icons-reddit-logo-smiley.png',
+                    fit: BoxFit.cover,
+                  )
+                );
+                },
+              fit: BoxFit.cover,
+              ),
+            ),
+
+        ],
+      ),
+    );
+
+  }
   }
