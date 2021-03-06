@@ -39,41 +39,46 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   String collection = "new";
   String subreddit = "";
-  Future getArticles;
-  /*void _changeParams(Query params) {
-    setState(() {
-      this.searchParams = params;
-    });
-  }*/
+  Future<List<dynamic>> articles;
+  Future<List<dynamic>> PopularSubreddits;
+  bool fidgetSpinner=false;
+
+
    void _changeCollection(String collection){
      print(collection);
     setState(() {
       this.collection=collection;
-      getArticles=pozovi();
+      fidgetSpinner=false;
+      articles=getArticles();
     });
   }
   void _changeSubreddit(String subreddit){
     setState(() {
       this.subreddit=subreddit;
+      fidgetSpinner=false;
+      articles=getArticles();
     });
   }
 
-  Future<List<dynamic>> pozovi()async{
-
-    final response =await http.get("https://www.reddit.com/${subreddit.length>0 ? "r/"+subreddit:''}${collection}.json");
+  Future<List<dynamic>> getArticles()async{
+    final response =await http.get("https://www.reddit.com/${subreddit.length>0 ? "r/"+subreddit+'/':''}${collection}.json");
     List<dynamic> res =jsonDecode(response.body)['data']['children'];
-   /* res.forEach((element) {
-      print(element['data']['title']);
-    });*/
+    fidgetSpinner=true;
+    return res;
+
+  }
+  Future<List<dynamic>> getPopularSubreddits()async{
+    final response =await http.get("https://www.reddit.com/subreddits/popular.json");
+    List<dynamic> res =jsonDecode(response.body)['data']['children'];
     return res;
 
   }
 
   @override
   void initState(){
-    print("heloo");
     super.initState();
-    getArticles=pozovi();
+    articles=getArticles();
+    PopularSubreddits = getPopularSubreddits();
   }
 
 
@@ -84,47 +89,102 @@ class _MyHomePageState extends State<MyHomePage> {
        appBar: AppBar(
        ),
         drawer: Drawer(
+          child: FutureBuilder(
+            future: PopularSubreddits,
+            builder: (context,snapshot) {
+              if (snapshot.connectionState == ConnectionState.none &&
+                  snapshot.hasData == null) {
+                return Container();
+              }
+              if(snapshot.hasData) {
+                return ListView.builder(
+                    itemCount: snapshot.data.length,
+                    itemBuilder: (context, index) {
+                      String title = snapshot.data[index]['data']['display_name'];
+                      return ListTile(
+                        onTap:(){
+                          _changeSubreddit(title);
+                          Navigator.of(context).pop();
+                          },
+                        title: Text(title),
+                      );
+                      return Text(snapshot.data[index]['data']['title']);
+                    });
+              }
+              else if (snapshot.hasError) {
+                return Text("${snapshot.error}");
+              }
 
+              // By default, show a loading spinner.
+              return CircularProgressIndicator();
+
+            }
+          ),
         ),
         body:Column(
           children: [
             Navbar(this._changeCollection),
             Expanded(
-              child: Scaffold(
-                body: FutureBuilder(
+              child: Padding(
+                  padding: EdgeInsets.only(top:10.0),
+                child: Scaffold(
+                  body: FutureBuilder(
+                          future: articles,
+                          builder: (context,snapshot) {
+                            if(!fidgetSpinner)
+                              {
+                                return Center(
+                                    child:CircularProgressIndicator()
+                                );
+                              }
+                            if (snapshot.connectionState == ConnectionState.none &&
+                                snapshot.hasData == null) {
+                             /* print('project snapshot data is: ${projectSnap.data}');*//**/
+                              return Container();
+                            }
+                            if (snapshot.hasData)
+                            {
 
-                        future: getArticles,
-                        builder: (context,snapshot) {
-                          if (snapshot.connectionState == ConnectionState.none &&
-                              snapshot.hasData == null) {
-                            /*print('project snapshot data is: ${projectSnap.data}');*/
-                            return Container();
+                              return ListView.separated(
+                                itemCount: snapshot.data.length,
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    title: Text(
+                                        snapshot.data[index]['data']['title']),
+                                    trailing: Image.network(
+                                      snapshot.data[index]['data']['thumbnail'],
+                                      errorBuilder: (BuildContext context,
+                                          Object exception,
+                                          StackTrace stackTrace) {
+                                        return Container();
+                                      },
+                                    ),
+                                  );
+
+
+                                },
+                              separatorBuilder: (context,index){
+                                  return Divider(
+                                    color: Colors.grey,
+                                    thickness: 1,
+                                  );
+                              },
+                              );
+                            }
+                            else if (snapshot.hasError) {
+                              return Text("${snapshot.error}");
+                            }
+
+                            // By default, show a loading spinner.
+                            return CircularProgressIndicator();
                           }
-                          if (snapshot.hasData)
-                          {
-
-                            return ListView.builder(
-                              itemCount: snapshot.data.length,
-                              itemBuilder: (context, index) {
-                                print(snapshot.data[index]['data']['title']);
-                                return Text(snapshot.data[index]['data']['title']);
-
-                              });
-                          }
-                          else if (snapshot.hasError) {
-                            return Text("${snapshot.error}");
-                          }
-
-                          // By default, show a loading spinner.
-                          return CircularProgressIndicator();
-                        }
-                    )
-                ),
+                      )
+                  ),
+              ),
             )
           ],
         )
     );
-
   }
 }
 
